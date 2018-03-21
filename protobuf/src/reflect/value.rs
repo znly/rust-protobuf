@@ -112,6 +112,15 @@ impl ProtobufValue for Chars {
     }
 }
 
+impl<E : ProtobufEnum> ProtobufValue for ProtobufEnumOrUnknown<E> {
+    fn as_ref(&self) -> ProtobufValueRef {
+        ProtobufValueRef::Enum(match self.value() {
+            Ok(e) => e.descriptor(),
+            Err(..) => &E::enum_descriptor_static(None::<E>).values[0],
+        })
+    }
+}
+
 // conflicting implementations, so generated code is used instead
 /*
 impl<E : ProtobufEnum> ProtobufValue for E {

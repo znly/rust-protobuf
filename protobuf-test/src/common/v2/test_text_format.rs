@@ -3,6 +3,7 @@ use std::default::Default;
 use super::test_text_format_pb::*;
 
 use protobuf::text_format::print_to_string;
+use protobuf::ProtobufEnum;
 
 fn t<F : FnMut(&mut TestTypes)>(expected: &str, mut setter: F) {
     let mut m = TestTypes::new();
@@ -79,7 +80,7 @@ fn test_repeated_one() {
         m.mut_bytes_repeated().push(b"def".to_vec())
     });
     t("test_enum_repeated: DARK", |m| {
-        m.mut_test_enum_repeated().push(TestEnum::DARK)
+        m.mut_test_enum_repeated().push(TestEnum::DARK.to_or_unknown())
     });
     t("test_message_repeated {}", |m| {
         m.mut_test_message_repeated().push(Default::default());

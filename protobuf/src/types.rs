@@ -9,6 +9,7 @@ use stream::CodedInputStream;
 use stream::CodedOutputStream;
 use error::ProtobufResult;
 use core::ProtobufEnum;
+use core::ProtobufEnumOrUnknown;
 use core::Message;
 use wire_format::WireType;
 use rt;
@@ -86,6 +87,7 @@ pub struct ProtobufTypeCarllercheBytes;
 pub struct ProtobufTypeCarllercheChars;
 
 pub struct ProtobufTypeEnum<E : ProtobufEnum>(marker::PhantomData<E>);
+pub struct ProtobufTypeEnumOrUnknown<E : ProtobufEnum>(marker::PhantomData<E>);
 pub struct ProtobufTypeMessage<M : Message>(marker::PhantomData<M>);
 
 impl ProtobufType for ProtobufTypeFloat {
@@ -523,6 +525,30 @@ impl<E : ProtobufEnum + ProtobufValue> ProtobufType for ProtobufTypeEnum<E> {
         os: &mut CodedOutputStream,
     ) -> ProtobufResult<()> {
         os.write_enum_obj(field_number, *value)
+    }
+}
+
+impl<E : ProtobufEnum + ProtobufValue> ProtobufType for ProtobufTypeEnumOrUnknown<E> {
+    type Value = ProtobufEnumOrUnknown<E>;
+
+    fn wire_type() -> WireType {
+        WireType::WireTypeVarint
+    }
+
+    fn read(is: &mut CodedInputStream) -> ProtobufResult<ProtobufEnumOrUnknown<E>> {
+        is.read_enum_or_unknown()
+    }
+
+    fn compute_size(value: &ProtobufEnumOrUnknown<E>) -> u32 {
+        rt::compute_raw_varint32_size(value.raw_value() as u32) // TODO: wrap
+    }
+
+    fn write_with_cached_size(
+        field_number: u32,
+        value: &ProtobufEnumOrUnknown<E>,
+        os: &mut CodedOutputStream,
+    ) -> ProtobufResult<()> {
+        os.write_enum_or_unknown(field_number, *value)
     }
 }
 

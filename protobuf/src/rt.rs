@@ -151,6 +151,13 @@ pub fn vec_packed_enum_data_size<E : ProtobufEnum>(vec: &[E]) -> u32 {
         .fold(0, |a, i| a + i)
 }
 
+/// Size of serialized repeated packed enum field, excluding length and tag.
+pub fn vec_packed_enum_or_unknown_data_size<E : ProtobufEnum>(vec: &[ProtobufEnumOrUnknown<E>]) -> u32 {
+    vec.iter()
+        .map(|e| compute_raw_varint32_size(e.raw_value() as u32))
+        .fold(0, |a, i| a + i)
+}
+
 /// Size of serialized data with length prefix and tag
 pub fn vec_packed_varint_size<T : ProtobufVarint>(field_number: u32, vec: &[T]) -> u32 {
     if vec.is_empty() {
@@ -180,6 +187,16 @@ pub fn vec_packed_enum_size<E : ProtobufEnum>(field_number: u32, vec: &[E]) -> u
         0
     } else {
         let data_size = vec_packed_enum_data_size(vec);
+        tag_size(field_number) + data_size.len_varint() + data_size
+    }
+}
+
+/// Size of serialized data with length prefix and tag
+pub fn vec_packed_enum_or_unknown_size<E : ProtobufEnum>(field_number: u32, vec: &[ProtobufEnumOrUnknown<E>]) -> u32 {
+    if vec.is_empty() {
+        0
+    } else {
+        let data_size = vec_packed_enum_or_unknown_data_size(vec);
         tag_size(field_number) + data_size.len_varint() + data_size
     }
 }
@@ -219,9 +236,18 @@ fn enum_size_no_tag<E : ProtobufEnum>(value: E) -> u32 {
     value.value().len_varint()
 }
 
+fn enum_or_unknown_size_no_tag<E : ProtobufEnum>(value: ProtobufEnumOrUnknown<E>) -> u32 {
+    value.raw_value().len_varint()
+}
+
 /// Size of encoded enum field value.
 pub fn enum_size<E : ProtobufEnum>(field_number: u32, value: E) -> u32 {
     tag_size(field_number) + enum_size_no_tag(value)
+}
+
+/// Size of encoded enum field value.
+pub fn enum_or_unknown_size<E : ProtobufEnum>(field_number: u32, value: ProtobufEnumOrUnknown<E>) -> u32 {
+    tag_size(field_number) + enum_or_unknown_size_no_tag(value)
 }
 
 fn bytes_size_no_tag(bytes: &[u8]) -> u32 {
@@ -481,6 +507,22 @@ pub fn read_repeated_enum_into<E : ProtobufEnum>(
         WireTypeLengthDelimited => is.read_repeated_packed_enum_into(target),
         WireTypeVarint => {
             target.push(is.read_enum()?);
+            Ok(())
+        }
+        _ => Err(unexpected_wire_type(wire_type)),
+    }
+}
+
+/// Read repeated `enum` field into given vec.
+pub fn read_repeated_enum_or_unknown_into<E : ProtobufEnum>(
+    wire_type: WireType,
+    is: &mut CodedInputStream,
+    target: &mut Vec<ProtobufEnumOrUnknown<E>>,
+) -> ProtobufResult<()> {
+    match wire_type {
+        WireTypeLengthDelimited => is.read_repeated_packed_enum_or_unknown_into(target),
+        WireTypeVarint => {
+            target.push(is.read_enum_or_unknown()?);
             Ok(())
         }
         _ => Err(unexpected_wire_type(wire_type)),

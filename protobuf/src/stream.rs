@@ -14,6 +14,7 @@ use misc::remaining_capacity_as_slice_mut;
 use misc::remove_lifetime_mut;
 use core::Message;
 use core::ProtobufEnum;
+use core::ProtobufEnumOrUnknown;
 use unknown::UnknownFields;
 use unknown::UnknownValue;
 use unknown::UnknownValueRef;
@@ -403,6 +404,11 @@ impl<'a> CodedInputStream<'a> {
         }
     }
 
+    /// Read an enum from input stream
+    pub fn read_enum_or_unknown<E : ProtobufEnum>(&mut self) -> ProtobufResult<ProtobufEnumOrUnknown<E>> {
+        Ok(ProtobufEnumOrUnknown::from_raw_value(self.read_int32()?))
+    }
+
     pub fn read_repeated_packed_double_into(
         &mut self,
         target: &mut Vec<f64>,
@@ -590,6 +596,20 @@ impl<'a> CodedInputStream<'a> {
         let old_limit = self.push_limit(len)?;
         while !self.eof()? {
             target.push(self.read_enum()?);
+        }
+        self.pop_limit(old_limit);
+        Ok(())
+    }
+
+    /// Read repeated packed enums into provided vec
+    pub fn read_repeated_packed_enum_or_unknown_into<E : ProtobufEnum>(
+        &mut self,
+        target: &mut Vec<ProtobufEnumOrUnknown<E>>,
+    ) -> ProtobufResult<()> {
+        let len = self.read_raw_varint64()?;
+        let old_limit = self.push_limit(len)?;
+        while !self.eof()? {
+            target.push(self.read_enum_or_unknown()?);
         }
         self.pop_limit(old_limit);
         Ok(())
@@ -1086,6 +1106,15 @@ impl<'a> CodedOutputStream<'a> {
         self.write_enum_no_tag(value.value())
     }
 
+    /// Write enum value to the stream
+    pub fn write_enum_or_unknown_no_tag<E>(&mut self, value: ProtobufEnumOrUnknown<E>)
+        -> ProtobufResult<()>
+    where
+        E : ProtobufEnum,
+    {
+        self.write_enum_no_tag(value.raw_value())
+    }
+
     pub fn write_unknown_no_tag(&mut self, unknown: UnknownValueRef) -> ProtobufResult<()> {
         match unknown {
             UnknownValueRef::Fixed64(fixed64) => self.write_raw_little_endian64(fixed64),
@@ -1172,6 +1201,15 @@ impl<'a> CodedOutputStream<'a> {
         E : ProtobufEnum,
     {
         self.write_enum(field_number, value.value())
+    }
+
+    // Write enum to stream
+    pub fn write_enum_or_unknown<E>(&mut self, field_number: u32, value: ProtobufEnumOrUnknown<E>)
+        -> ProtobufResult<()>
+    where
+        E : ProtobufEnum,
+    {
+        self.write_enum(field_number, value.raw_value())
     }
 
     pub fn write_unknown(

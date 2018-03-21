@@ -104,3 +104,26 @@ impl From<ProtobufError> for io::Error {
         }
     }
 }
+
+impl From<UnknownEnumValueError> for ProtobufError {
+    fn from(_: UnknownEnumValueError) -> Self {
+        // TODO: incorrect value passed to the error
+        ProtobufError::WireError(WireError::InvalidEnumValue(0))
+    }
+}
+
+/// Enum contains unknown value
+#[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Clone, Hash)]
+pub struct UnknownEnumValueError;
+
+impl Error for UnknownEnumValueError {
+    fn description(&self) -> &str {
+        "field contains unknown enum value"
+    }
+}
+
+impl fmt::Display for UnknownEnumValueError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("field contains unknown enum value")
+    }
+}

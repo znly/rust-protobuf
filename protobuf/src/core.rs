@@ -3,6 +3,7 @@ use std::any::TypeId;
 use std::fmt;
 use std::io::Read;
 use std::io::Write;
+use std::marker;
 
 #[cfg(feature = "bytes")]
 use bytes::Bytes;
@@ -19,6 +20,7 @@ use stream::CodedOutputStream;
 use stream::with_coded_output_stream_to_bytes;
 use error::ProtobufError;
 use error::ProtobufResult;
+use error::UnknownEnumValueError;
 
 
 /// Trait implemented for all generated structs for protobuf messages.
@@ -201,6 +203,11 @@ pub trait ProtobufEnum: Eq + Sized + Copy + 'static {
         panic!();
     }
 
+    /// Shortcut to construct `ProtobufEnumOrUnknown`
+    fn to_or_unknown(&self) -> ProtobufEnumOrUnknown<Self> {
+        ProtobufEnumOrUnknown::from_enum(*self)
+    }
+
     /// Get enum value descriptor.
     fn descriptor(&self) -> &'static EnumValueDescriptor {
         self.enum_descriptor().value_by_number(self.value())
@@ -215,6 +222,67 @@ pub trait ProtobufEnum: Eq + Sized + Copy + 'static {
     // http://stackoverflow.com/q/20342436/15018
     fn enum_descriptor_static(_: Option<Self>) -> &'static EnumDescriptor {
         panic!();
+    }
+}
+
+
+/// Holds a protobuf enum or unknown value of enum.
+/// Protobuf requires unknown protobuf enum values to be preserved.
+#[derive(Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Copy, Clone)]
+pub struct ProtobufEnumOrUnknown<E : ProtobufEnum> {
+    value: i32,
+    _marker: marker::PhantomData<E>,
+}
+
+impl<E : ProtobufEnum> fmt::Display for ProtobufEnumOrUnknown<E> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match E::from_i32(self.value) {
+            // TODO: implement Display and Debug for ProtobufEnum
+            Some(e) => fmt::Display::fmt(e.descriptor().name(), f),
+            None => fmt::Display::fmt(&self.value, f),
+        }
+    }
+}
+
+impl<E : ProtobufEnum> ProtobufEnumOrUnknown<E> {
+    /// Construct an enum holder with value zero.
+    pub fn new() -> Self {
+        ProtobufEnumOrUnknown {
+            value: 0,
+            _marker: marker::PhantomData,
+        }
+    }
+
+    /// Construct an enum value with given value which
+    /// may be not a valid protobuf value.
+    pub fn from_raw_value(value: i32) -> Self {
+        ProtobufEnumOrUnknown {
+            value: value,
+            _marker: marker::PhantomData,
+        }
+    }
+
+    /// Construct this object from valid enum value.
+    ///
+    /// This operation has a shortcut `value.to_or_unknown()`.
+    pub fn from_enum(value: E) -> Self {
+        ProtobufEnumOrUnknown {
+            value: value.value(),
+            _marker: marker::PhantomData,
+        }
+    }
+
+    /// Get raw `i32` value even if value is unknown
+    pub fn raw_value(&self) -> i32 {
+        self.value
+    }
+
+    /// Get enum value, or error if value is unknown
+    pub fn value(&self) -> Result<E, UnknownEnumValueError> {
+        match E::from_i32(self.value) {
+            Some(e) => Ok(e),
+            None => Err(UnknownEnumValueError),
+        }
     }
 }
 
