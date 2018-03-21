@@ -1918,8 +1918,8 @@ pub struct FieldDescriptorProto {
     // message fields
     name: ::protobuf::SingularField<::std::string::String>,
     number: ::std::option::Option<i32>,
-    label: ::std::option::Option<FieldDescriptorProto_Label>,
-    field_type: ::std::option::Option<FieldDescriptorProto_Type>,
+    label: ::std::option::Option<::protobuf::ProtobufEnumOrUnknown<FieldDescriptorProto_Label>>,
+    field_type: ::std::option::Option<::protobuf::ProtobufEnumOrUnknown<FieldDescriptorProto_Type>>,
     type_name: ::protobuf::SingularField<::std::string::String>,
     extendee: ::protobuf::SingularField<::std::string::String>,
     default_value: ::protobuf::SingularField<::std::string::String>,
@@ -2013,11 +2013,14 @@ impl FieldDescriptorProto {
 
     // Param is passed by value, moved
     pub fn set_label(&mut self, v: FieldDescriptorProto_Label) {
-        self.label = ::std::option::Option::Some(v);
+        self.label = ::std::option::Option::Some(::protobuf::ProtobufEnumOrUnknown::from_enum(v));
     }
 
     pub fn get_label(&self) -> FieldDescriptorProto_Label {
-        self.label.unwrap_or(FieldDescriptorProto_Label::LABEL_OPTIONAL)
+        match self.label {
+            Some(v) => v.value().unwrap_or(FieldDescriptorProto_Label::LABEL_OPTIONAL),
+            None => FieldDescriptorProto_Label::LABEL_OPTIONAL,
+        }
     }
 
     // optional .google.protobuf.FieldDescriptorProto.Type type = 5;
@@ -2032,11 +2035,14 @@ impl FieldDescriptorProto {
 
     // Param is passed by value, moved
     pub fn set_field_type(&mut self, v: FieldDescriptorProto_Type) {
-        self.field_type = ::std::option::Option::Some(v);
+        self.field_type = ::std::option::Option::Some(::protobuf::ProtobufEnumOrUnknown::from_enum(v));
     }
 
     pub fn get_field_type(&self) -> FieldDescriptorProto_Type {
-        self.field_type.unwrap_or(FieldDescriptorProto_Type::TYPE_DOUBLE)
+        match self.field_type {
+            Some(v) => v.value().unwrap_or(FieldDescriptorProto_Type::TYPE_DOUBLE),
+            None => FieldDescriptorProto_Type::TYPE_DOUBLE,
+        }
     }
 
     // optional string type_name = 6;
@@ -2264,14 +2270,14 @@ impl ::protobuf::Message for FieldDescriptorProto {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
-                    let tmp = is.read_enum()?;
+                    let tmp = is.read_enum_or_unknown()?;
                     self.label = ::std::option::Option::Some(tmp);
                 },
                 5 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
-                    let tmp = is.read_enum()?;
+                    let tmp = is.read_enum_or_unknown()?;
                     self.field_type = ::std::option::Option::Some(tmp);
                 },
                 6 => {
@@ -2315,10 +2321,10 @@ impl ::protobuf::Message for FieldDescriptorProto {
             my_size += ::protobuf::rt::value_size(3, v, ::protobuf::wire_format::WireTypeVarint);
         }
         if let Some(v) = self.label {
-            my_size += ::protobuf::rt::enum_size(4, v);
+            my_size += ::protobuf::rt::enum_or_unknown_size(4, v);
         }
         if let Some(v) = self.field_type {
-            my_size += ::protobuf::rt::enum_size(5, v);
+            my_size += ::protobuf::rt::enum_or_unknown_size(5, v);
         }
         if let Some(ref v) = self.type_name.as_ref() {
             my_size += ::protobuf::rt::string_size(6, &v);
@@ -2352,10 +2358,10 @@ impl ::protobuf::Message for FieldDescriptorProto {
             os.write_int32(3, v)?;
         }
         if let Some(v) = self.label {
-            os.write_enum(4, v.value())?;
+            os.write_enum_or_unknown(4, v)?;
         }
         if let Some(v) = self.field_type {
-            os.write_enum(5, v.value())?;
+            os.write_enum_or_unknown(5, v)?;
         }
         if let Some(ref v) = self.type_name.as_ref() {
             os.write_string(6, &v)?;
@@ -2429,12 +2435,12 @@ impl ::protobuf::Message for FieldDescriptorProto {
                     |m: &FieldDescriptorProto| { &m.number },
                     |m: &mut FieldDescriptorProto| { &mut m.number },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeEnum<FieldDescriptorProto_Label>>(
+                fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeEnumOrUnknown<FieldDescriptorProto_Label>>(
                     "label",
                     |m: &FieldDescriptorProto| { &m.label },
                     |m: &mut FieldDescriptorProto| { &mut m.label },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeEnum<FieldDescriptorProto_Type>>(
+                fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeEnumOrUnknown<FieldDescriptorProto_Type>>(
                     "type",
                     |m: &FieldDescriptorProto| { &m.field_type },
                     |m: &mut FieldDescriptorProto| { &mut m.field_type },
@@ -4133,7 +4139,7 @@ pub struct FileOptions {
     java_multiple_files: ::std::option::Option<bool>,
     java_generate_equals_and_hash: ::std::option::Option<bool>,
     java_string_check_utf8: ::std::option::Option<bool>,
-    optimize_for: ::std::option::Option<FileOptions_OptimizeMode>,
+    optimize_for: ::std::option::Option<::protobuf::ProtobufEnumOrUnknown<FileOptions_OptimizeMode>>,
     go_package: ::protobuf::SingularField<::std::string::String>,
     cc_generic_services: ::std::option::Option<bool>,
     java_generic_services: ::std::option::Option<bool>,
@@ -4304,11 +4310,14 @@ impl FileOptions {
 
     // Param is passed by value, moved
     pub fn set_optimize_for(&mut self, v: FileOptions_OptimizeMode) {
-        self.optimize_for = ::std::option::Option::Some(v);
+        self.optimize_for = ::std::option::Option::Some(::protobuf::ProtobufEnumOrUnknown::from_enum(v));
     }
 
     pub fn get_optimize_for(&self) -> FileOptions_OptimizeMode {
-        self.optimize_for.unwrap_or(FileOptions_OptimizeMode::SPEED)
+        match self.optimize_for {
+            Some(v) => v.value().unwrap_or(FileOptions_OptimizeMode::SPEED),
+            None => FileOptions_OptimizeMode::SPEED,
+        }
     }
 
     // optional string go_package = 11;
@@ -4585,7 +4594,7 @@ impl ::protobuf::Message for FileOptions {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
-                    let tmp = is.read_enum()?;
+                    let tmp = is.read_enum_or_unknown()?;
                     self.optimize_for = ::std::option::Option::Some(tmp);
                 },
                 11 => {
@@ -4663,7 +4672,7 @@ impl ::protobuf::Message for FileOptions {
             my_size += 3;
         }
         if let Some(v) = self.optimize_for {
-            my_size += ::protobuf::rt::enum_size(9, v);
+            my_size += ::protobuf::rt::enum_or_unknown_size(9, v);
         }
         if let Some(ref v) = self.go_package.as_ref() {
             my_size += ::protobuf::rt::string_size(11, &v);
@@ -4715,7 +4724,7 @@ impl ::protobuf::Message for FileOptions {
             os.write_bool(27, v)?;
         }
         if let Some(v) = self.optimize_for {
-            os.write_enum(9, v.value())?;
+            os.write_enum_or_unknown(9, v)?;
         }
         if let Some(ref v) = self.go_package.as_ref() {
             os.write_string(11, &v)?;
@@ -4813,7 +4822,7 @@ impl ::protobuf::Message for FileOptions {
                     |m: &FileOptions| { &m.java_string_check_utf8 },
                     |m: &mut FileOptions| { &mut m.java_string_check_utf8 },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeEnum<FileOptions_OptimizeMode>>(
+                fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeEnumOrUnknown<FileOptions_OptimizeMode>>(
                     "optimize_for",
                     |m: &FileOptions| { &m.optimize_for },
                     |m: &mut FileOptions| { &mut m.optimize_for },
@@ -5287,9 +5296,9 @@ impl ::protobuf::reflect::ProtobufValue for MessageOptions {
 #[derive(PartialEq,Clone,Default)]
 pub struct FieldOptions {
     // message fields
-    ctype: ::std::option::Option<FieldOptions_CType>,
+    ctype: ::std::option::Option<::protobuf::ProtobufEnumOrUnknown<FieldOptions_CType>>,
     packed: ::std::option::Option<bool>,
-    jstype: ::std::option::Option<FieldOptions_JSType>,
+    jstype: ::std::option::Option<::protobuf::ProtobufEnumOrUnknown<FieldOptions_JSType>>,
     lazy: ::std::option::Option<bool>,
     deprecated: ::std::option::Option<bool>,
     weak: ::std::option::Option<bool>,
@@ -5326,11 +5335,14 @@ impl FieldOptions {
 
     // Param is passed by value, moved
     pub fn set_ctype(&mut self, v: FieldOptions_CType) {
-        self.ctype = ::std::option::Option::Some(v);
+        self.ctype = ::std::option::Option::Some(::protobuf::ProtobufEnumOrUnknown::from_enum(v));
     }
 
     pub fn get_ctype(&self) -> FieldOptions_CType {
-        self.ctype.unwrap_or(FieldOptions_CType::STRING)
+        match self.ctype {
+            Some(v) => v.value().unwrap_or(FieldOptions_CType::STRING),
+            None => FieldOptions_CType::STRING,
+        }
     }
 
     // optional bool packed = 2;
@@ -5364,11 +5376,14 @@ impl FieldOptions {
 
     // Param is passed by value, moved
     pub fn set_jstype(&mut self, v: FieldOptions_JSType) {
-        self.jstype = ::std::option::Option::Some(v);
+        self.jstype = ::std::option::Option::Some(::protobuf::ProtobufEnumOrUnknown::from_enum(v));
     }
 
     pub fn get_jstype(&self) -> FieldOptions_JSType {
-        self.jstype.unwrap_or(FieldOptions_JSType::JS_NORMAL)
+        match self.jstype {
+            Some(v) => v.value().unwrap_or(FieldOptions_JSType::JS_NORMAL),
+            None => FieldOptions_JSType::JS_NORMAL,
+        }
     }
 
     // optional bool lazy = 5;
@@ -5472,7 +5487,7 @@ impl ::protobuf::Message for FieldOptions {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
-                    let tmp = is.read_enum()?;
+                    let tmp = is.read_enum_or_unknown()?;
                     self.ctype = ::std::option::Option::Some(tmp);
                 },
                 2 => {
@@ -5486,7 +5501,7 @@ impl ::protobuf::Message for FieldOptions {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
-                    let tmp = is.read_enum()?;
+                    let tmp = is.read_enum_or_unknown()?;
                     self.jstype = ::std::option::Option::Some(tmp);
                 },
                 5 => {
@@ -5526,13 +5541,13 @@ impl ::protobuf::Message for FieldOptions {
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
         if let Some(v) = self.ctype {
-            my_size += ::protobuf::rt::enum_size(1, v);
+            my_size += ::protobuf::rt::enum_or_unknown_size(1, v);
         }
         if let Some(v) = self.packed {
             my_size += 2;
         }
         if let Some(v) = self.jstype {
-            my_size += ::protobuf::rt::enum_size(6, v);
+            my_size += ::protobuf::rt::enum_or_unknown_size(6, v);
         }
         if let Some(v) = self.lazy {
             my_size += 2;
@@ -5554,13 +5569,13 @@ impl ::protobuf::Message for FieldOptions {
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
         if let Some(v) = self.ctype {
-            os.write_enum(1, v.value())?;
+            os.write_enum_or_unknown(1, v)?;
         }
         if let Some(v) = self.packed {
             os.write_bool(2, v)?;
         }
         if let Some(v) = self.jstype {
-            os.write_enum(6, v.value())?;
+            os.write_enum_or_unknown(6, v)?;
         }
         if let Some(v) = self.lazy {
             os.write_bool(5, v)?;
@@ -5618,7 +5633,7 @@ impl ::protobuf::Message for FieldOptions {
         unsafe {
             descriptor.get(|| {
                 let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeEnum<FieldOptions_CType>>(
+                fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeEnumOrUnknown<FieldOptions_CType>>(
                     "ctype",
                     |m: &FieldOptions| { &m.ctype },
                     |m: &mut FieldOptions| { &mut m.ctype },
@@ -5628,7 +5643,7 @@ impl ::protobuf::Message for FieldOptions {
                     |m: &FieldOptions| { &m.packed },
                     |m: &mut FieldOptions| { &mut m.packed },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeEnum<FieldOptions_JSType>>(
+                fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeEnumOrUnknown<FieldOptions_JSType>>(
                     "jstype",
                     |m: &FieldOptions| { &m.jstype },
                     |m: &mut FieldOptions| { &mut m.jstype },

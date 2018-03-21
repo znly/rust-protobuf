@@ -190,7 +190,7 @@ pub struct Value {
 
 #[derive(Clone,PartialEq)]
 pub enum Value_oneof_kind {
-    null_value(NullValue),
+    null_value(::protobuf::ProtobufEnumOrUnknown<NullValue>),
     number_value(f64),
     string_value(::std::string::String),
     bool_value(bool),
@@ -228,12 +228,12 @@ impl Value {
 
     // Param is passed by value, moved
     pub fn set_null_value(&mut self, v: NullValue) {
-        self.kind = ::std::option::Option::Some(Value_oneof_kind::null_value(v))
+        self.kind = ::std::option::Option::Some(Value_oneof_kind::null_value(::protobuf::ProtobufEnumOrUnknown::from_enum(v)))
     }
 
     pub fn get_null_value(&self) -> NullValue {
         match self.kind {
-            ::std::option::Option::Some(Value_oneof_kind::null_value(v)) => v,
+            ::std::option::Option::Some(Value_oneof_kind::null_value(v)) => v.value().unwrap_or(NullValue::NULL_VALUE),
             _ => NullValue::NULL_VALUE,
         }
     }
@@ -459,7 +459,7 @@ impl ::protobuf::Message for Value {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
-                    self.kind = ::std::option::Option::Some(Value_oneof_kind::null_value(is.read_enum()?));
+                    self.kind = ::std::option::Option::Some(Value_oneof_kind::null_value(is.read_enum_or_unknown()?));
                 },
                 2 => {
                     if wire_type != ::protobuf::wire_format::WireTypeFixed64 {
@@ -506,7 +506,7 @@ impl ::protobuf::Message for Value {
         if let ::std::option::Option::Some(ref v) = self.kind {
             match v {
                 &Value_oneof_kind::null_value(v) => {
-                    my_size += ::protobuf::rt::enum_size(1, v);
+                    my_size += ::protobuf::rt::enum_or_unknown_size(1, v);
                 },
                 &Value_oneof_kind::number_value(v) => {
                     my_size += 9;
@@ -536,7 +536,7 @@ impl ::protobuf::Message for Value {
         if let ::std::option::Option::Some(ref v) = self.kind {
             match v {
                 &Value_oneof_kind::null_value(v) => {
-                    os.write_enum(1, v.value())?;
+                    os.write_enum_or_unknown(1, v)?;
                 },
                 &Value_oneof_kind::number_value(v) => {
                     os.write_double(2, v)?;
