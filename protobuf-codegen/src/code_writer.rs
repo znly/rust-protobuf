@@ -51,22 +51,6 @@ impl<'a> CodeWriter<'a> {
         self.write_line("// @generated");
 
         self.write_line("");
-        self.comment("https://github.com/rust-lang/rust-clippy/issues/702");
-        self.write_line("#![allow(unknown_lints)]");
-        self.write_line("#![allow(clippy::all)]");
-        self.write_line("");
-        self.write_line("#![cfg_attr(rustfmt, rustfmt_skip)]");
-        self.write_line("");
-        self.write_line("#![allow(box_pointers)]");
-        self.write_line("#![allow(dead_code)]");
-        self.write_line("#![allow(missing_docs)]");
-        self.write_line("#![allow(non_camel_case_types)]");
-        self.write_line("#![allow(non_snake_case)]");
-        self.write_line("#![allow(non_upper_case_globals)]");
-        self.write_line("#![allow(trivial_casts)]");
-        self.write_line("#![allow(unsafe_code)]");
-        self.write_line("#![allow(unused_imports)]");
-        self.write_line("#![allow(unused_results)]");
     }
 
     pub fn todo(&mut self, message: &str) {
