@@ -175,6 +175,8 @@ fn gen_file(
         w.write_generated_by("rust-protobuf", env!("CARGO_PKG_VERSION"));
 
         w.write_line("");
+        w.write_line("use protobuf::Message as Message_imported_for_functions;");
+        w.write_line("use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;");
         if customize.inside_protobuf != Some(true) {
             w.write_line("");
             w.write_line("/// Generated files are compatible only with the same version");
