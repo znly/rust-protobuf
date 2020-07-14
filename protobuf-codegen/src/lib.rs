@@ -193,7 +193,9 @@ fn gen_file(
             ));
         }
 
+        w.write_serde_use(&customize);
         static NESTED_TYPE_NUMBER: protobuf::rt::LazyV2<i32> = protobuf::rt::LazyV2::INIT;
+
         let message_type_number = *NESTED_TYPE_NUMBER.get(|| {
             protobuf::reflect::MessageDescriptor::for_type::<FileDescriptorProto>()
                 .get_field_by_name("message_type")
@@ -216,7 +218,7 @@ fn gen_file(
                     &path,
                     file.source_code_info.as_ref(),
                 )
-                .write(&mut w);
+                .write(&mut w, &customize);
             }
         }
 

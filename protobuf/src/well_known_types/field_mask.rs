@@ -20,6 +20,10 @@
 
 //! Generated file from `google/protobuf/field_mask.proto`
 
+#[cfg(serde)]
+use serde::{Deserialize, Serialize};
+
+
 #[derive(PartialEq,Clone,Default)]
 #[cfg_attr(serde, derive(Serialize, Deserialize))]
 pub struct FieldMask {

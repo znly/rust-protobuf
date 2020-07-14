@@ -574,7 +574,7 @@ impl<'a> MessageGen<'a> {
         );
     }
 
-    pub fn write(&self, w: &mut CodeWriter) {
+    pub fn write(&self, w: &mut CodeWriter, customize: &Customize) {
         w.all_documentation(self.info, self.path);
         self.write_struct(w);
 
@@ -621,6 +621,8 @@ impl<'a> MessageGen<'a> {
                 self.message.message.get_name()
             ));
             w.pub_mod(mod_name.get(), |w| {
+                w.write_serde_use(&customize);
+
                 let mut first = true;
 
                 for oneof in &oneofs {
@@ -648,7 +650,7 @@ impl<'a> MessageGen<'a> {
                     }
                     first = false;
                     MessageGen::new(nested, self.root_scope, &self.customize, &path, self.info)
-                        .write(w);
+                        .write(w, &customize);
                 }
 
                 static ENUM_TYPE_NUMBER: protobuf::rt::LazyV2<i32> = protobuf::rt::LazyV2::INIT;
