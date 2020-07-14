@@ -22,6 +22,34 @@ use crate::scope::MessageWithScope;
 use crate::scope::RootScope;
 use crate::scope::WithScope;
 use crate::serde;
+use std::fmt;
+
+/// Protobuf message Rust type name
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct RustTypeMessage(pub RustIdentWithPath);
+
+impl fmt::Display for RustTypeMessage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
+impl<S: Into<RustIdentWithPath>> From<S> for RustTypeMessage {
+    fn from(s: S) -> Self {
+        RustTypeMessage(s.into())
+    }
+}
+
+impl RustTypeMessage {
+    /// Code which emits default instance.
+    pub fn default_instance(&self, customize: &Customize) -> String {
+        format!(
+            "<{} as {}::Message>::default_instance()",
+            self.0,
+            protobuf_crate_path(customize)
+        )
+    }
+}
 
 /// Message info for codegen
 pub(crate) struct MessageGen<'a> {
@@ -48,7 +76,7 @@ impl<'a> MessageGen<'a> {
             message.message.options.get_message(),
         ));
 
-        static FIELD_NUMBER: protobuf::rt::Lazy<i32> = protobuf::rt::Lazy::INIT;
+        static FIELD_NUMBER: protobuf::rt::LazyV2<i32> = protobuf::rt::LazyV2::INIT;
         let field_number = *FIELD_NUMBER.get(|| {
             protobuf::reflect::MessageDescriptor::for_type::<DescriptorProto>()
                 .get_field_by_name("field")
@@ -602,7 +630,7 @@ impl<'a> MessageGen<'a> {
                     oneof.write(w);
                 }
 
-                static NESTED_TYPE_NUMBER: protobuf::rt::Lazy<i32> = protobuf::rt::Lazy::INIT;
+                static NESTED_TYPE_NUMBER: protobuf::rt::LazyV2<i32> = protobuf::rt::LazyV2::INIT;
                 let nested_type_number = *NESTED_TYPE_NUMBER.get(|| {
                     protobuf::reflect::MessageDescriptor::for_type::<DescriptorProto>()
                         .get_field_by_name("nested_type")
@@ -625,7 +653,7 @@ impl<'a> MessageGen<'a> {
                         .write(w, &customize);
                 }
 
-                static ENUM_TYPE_NUMBER: protobuf::rt::Lazy<i32> = protobuf::rt::Lazy::INIT;
+                static ENUM_TYPE_NUMBER: protobuf::rt::LazyV2<i32> = protobuf::rt::LazyV2::INIT;
                 let enum_type_number = *ENUM_TYPE_NUMBER.get(|| {
                     protobuf::reflect::MessageDescriptor::for_type::<DescriptorProto>()
                         .get_field_by_name("enum_type")

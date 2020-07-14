@@ -81,7 +81,6 @@ impl<'a> CodeWriter<'a> {
         self.write_line("#![allow(non_snake_case)]");
         self.write_line("#![allow(non_upper_case_globals)]");
         self.write_line("#![allow(trivial_casts)]");
-        self.write_line("#![allow(unused_imports)]");
         self.write_line("#![allow(unused_results)]");
     }
 
@@ -120,7 +119,7 @@ impl<'a> CodeWriter<'a> {
 
     pub fn lazy_static(&mut self, name: &str, ty: &str, protobuf_crate_path: &str) {
         self.write_line(&format!(
-            "static {}: {}::rt::Lazy<{}> = {}::rt::Lazy::INIT;",
+            "static {}: {}::rt::LazyV2<{}> = {}::rt::LazyV2::INIT;",
             name, protobuf_crate_path, ty, protobuf_crate_path,
         ));
     }

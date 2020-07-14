@@ -53,7 +53,7 @@ mod enums;
 mod error;
 pub mod ext;
 pub mod json;
-mod lazy;
+mod lazy_v2;
 mod oneof;
 pub mod prelude;
 pub mod reflect;

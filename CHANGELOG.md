@@ -21,8 +21,6 @@ Version 3.0 is backward incompatible with 2.0 version. Changes are listed here:
   signatures](https://github.com/stepancheg/rust-protobuf/commit/a05a4216fc3305c67b7a2d19011be3bd503d5166)
 - [Remove `descriptorx` from `protobuf`
   crate](https://github.com/stepancheg/rust-protobuf/commit/4e8896645c3e017ac91f529cb69ce76b002f6fc1)
-- [well_known_types::Any gets pack, unpack, is
-  operations](https://github.com/stepancheg/rust-protobuf/commit/e91bf7eb20abe68a7b29264b864e2cecbbb3f769)
 
 ### New features
 
@@ -33,7 +31,30 @@ Version 3.0 is backward incompatible with 2.0 version. Changes are listed here:
 - `generate_getter` option to disable generation of getters functions.
 - [Flush `CodedOutputStream` on `drop`](https://github.com/stepancheg/rust-protobuf/commit/0e9cc5964c2731a771725bcf70125d3eb1c273b3)
 
-## [2.15] - Unreleased
+## [2.17] - Unreleased
+
+- `protoc` crate now depends on `which` crate for `protoc` binary lookup
+- pure rust codegen output adjusted to be closer to `protoc`-command based output
+
+## [2.16.2] - 2020-07-06
+
+- Fix compilation when feature `with-bytes` is enabled
+
+## [2.16.1] - 2020-07-06
+
+- Mute self-deprecation warning when compiling rust-protobuf
+
+## [2.16.0] - 2020-07-06
+
+- Generated repeated and message fields for proto2 are
+  [public now](https://github.com/stepancheg/rust-protobuf/commit/f391e9ae0968ae08f4a68798c3b3f25852590150)
+  (for proto3 all fields are already public).
+- Generated code no longer contains `unsafe`
+- Minor changes in generated files
+
+## [2.15.1] - 2020-06-26
+
+- [Use full name of Box in generated code](https://github.com/stepancheg/rust-protobuf/pull/492)
 
 ## [2.15.0] - 2020-06-21
 

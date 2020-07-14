@@ -260,12 +260,13 @@ pub struct Protoc {
 impl Protoc {
     /// New `protoc` command from `$PATH`
     pub fn from_env_path() -> Protoc {
-        if let Ok(path) = which::which("protoc") {
-            Protoc {
+        match which::which("protoc") {
+            Ok(path) => Protoc {
                 exec: path.into_os_string(),
+            },
+            Err(e) => {
+                panic!("protoc binary not found: {}", e);
             }
-        } else {
-            panic!("protoc binary not found");
         }
     }
 

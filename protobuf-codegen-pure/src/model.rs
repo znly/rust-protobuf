@@ -129,7 +129,7 @@ pub enum FieldType {
     /// Protobut map
     Map(Box<(FieldType, FieldType)>),
     /// Protobuf group (deprecated)
-    Group(Vec<Field>),
+    Group { name: String, fields: Vec<Field> },
 }
 
 /// A Protobuf Field
@@ -147,6 +147,13 @@ pub struct Field {
     pub options: Vec<ProtobufOption>,
 }
 
+/// A Protobuf field of oneof group
+#[derive(Debug, Clone, PartialEq)]
+pub enum FieldOrOneOf {
+    Field(Field),
+    OneOf(OneOf),
+}
+
 /// Extension range
 #[derive(Default, Debug, Eq, PartialEq, Copy, Clone)]
 pub struct FieldNumberRange {
@@ -161,10 +168,8 @@ pub struct FieldNumberRange {
 pub struct Message {
     /// Message name
     pub name: String,
-    /// Message `Field`s
-    pub fields: Vec<Field>,
-    /// Message `OneOf`s
-    pub oneofs: Vec<OneOf>,
+    /// Message fields and oneofs
+    pub fields: Vec<FieldOrOneOf>,
     /// Message reserved numbers
     ///
     /// TODO: use RangeInclusive once stable
@@ -177,6 +182,42 @@ pub struct Message {
     pub enums: Vec<Enumeration>,
     /// Non-builtin options
     pub options: Vec<ProtobufOption>,
+    /// Extension field numbers
+    pub extensions: Vec<FieldNumberRange>,
+}
+
+impl Message {
+    pub fn regular_fields_including_in_oneofs(&self) -> Vec<&Field> {
+        self.fields
+            .iter()
+            .flat_map(|fo| match fo {
+                FieldOrOneOf::Field(f) => vec![f],
+                FieldOrOneOf::OneOf(o) => o.fields.iter().collect(),
+            })
+            .collect()
+    }
+
+    #[cfg(test)]
+    pub fn regular_fields_for_test(&self) -> Vec<&Field> {
+        self.fields
+            .iter()
+            .flat_map(|fo| match fo {
+                FieldOrOneOf::Field(f) => Some(f),
+                FieldOrOneOf::OneOf(_) => None,
+            })
+            .collect()
+    }
+
+    #[cfg(test)]
+    pub fn oneofs_for_test(&self) -> Vec<&OneOf> {
+        self.fields
+            .iter()
+            .flat_map(|fo| match fo {
+                FieldOrOneOf::Field(_) => None,
+                FieldOrOneOf::OneOf(o) => Some(o),
+            })
+            .collect()
+    }
 }
 
 /// A protobuf enumeration field
@@ -200,7 +241,7 @@ pub struct Enumeration {
 }
 
 /// A OneOf
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct OneOf {
     /// OneOf name
     pub name: String,
@@ -279,7 +320,7 @@ pub struct FileDescriptor {
     /// Imports
     pub import_paths: Vec<String>,
     /// Package
-    pub package: String,
+    pub package: Option<String>,
     /// Protobuf Syntax
     pub syntax: Syntax,
     /// Top level messages

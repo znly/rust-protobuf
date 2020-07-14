@@ -1,16 +1,17 @@
 //! Convert parser model to rust-protobuf model
 
 use std::iter;
-use std::mem;
 use std::path::Path;
 
 use crate::model;
 
 use protobuf;
 use protobuf::descriptor::field_descriptor_proto;
+use protobuf::json::json_name;
 use protobuf::prelude::*;
 use protobuf::Message;
 
+use crate::model::FieldOrOneOf;
 use crate::protobuf_codegen::case_convert::camel_case;
 use crate::protobuf_codegen::ProtobufAbsolutePath;
 use crate::protobuf_codegen::ProtobufIdent;
@@ -209,6 +210,8 @@ impl<'a> Resolver<'a> {
 
         output.set_label(field_descriptor_proto::Label::LABEL_OPTIONAL);
 
+        output.set_json_name(json_name(&name));
+
         output
     }
 
@@ -229,6 +232,23 @@ impl<'a> Resolver<'a> {
         output
             .field
             .push(self.map_entry_field("value", 2, value, path_in_file));
+
+        Ok(output)
+    }
+
+    fn group_message(
+        &self,
+        name: &str,
+        fields: &[model::Field],
+        path_in_file: &ProtobufRelativePath,
+    ) -> ConvertResult<protobuf::descriptor::DescriptorProto> {
+        let mut output = protobuf::descriptor::DescriptorProto::new();
+
+        output.set_name(name.to_owned());
+
+        for f in fields {
+            output.field.push(self.field(f, None, path_in_file)?);
+        }
 
         Ok(output)
     }
@@ -262,9 +282,20 @@ impl<'a> Resolver<'a> {
             nested_messages.push(self.message(m, &nested_path_in_file)?);
         }
 
-        for f in &input.fields {
-            if let model::FieldType::Map(ref t) = f.typ {
-                nested_messages.push(self.map_entry_message(&f.name, &t.0, &t.1, path_in_file)?);
+        for f in input.regular_fields_including_in_oneofs() {
+            match &f.typ {
+                model::FieldType::Map(t) => {
+                    nested_messages.push(self.map_entry_message(
+                        &f.name,
+                        &t.0,
+                        &t.1,
+                        path_in_file,
+                    )?);
+                }
+                model::FieldType::Group { name, fields } => {
+                    nested_messages.push(self.group_message(name, fields, &nested_path_in_file)?);
+                }
+                _ => (),
             }
         }
 
@@ -279,26 +310,39 @@ impl<'a> Resolver<'a> {
         {
             let mut fields = protobuf::RepeatedField::new();
 
-            for f in &input.fields {
-                fields.push(self.field(f, None, &nested_path_in_file)?);
-            }
-
-            for (oneof_index, oneof) in input.oneofs.iter().enumerate() {
-                let oneof_index = oneof_index as i32;
-                for f in &oneof.fields {
-                    fields.push(self.field(f, Some(oneof_index as i32), &nested_path_in_file)?);
+            for fo in &input.fields {
+                match fo {
+                    FieldOrOneOf::Field(f) => {
+                        fields.push(self.field(f, None, &nested_path_in_file)?);
+                    }
+                    FieldOrOneOf::OneOf(o) => {
+                        let oneof_index = output.oneof_decl.len();
+                        for f in &o.fields {
+                            fields.push(self.field(
+                                f,
+                                Some(oneof_index as i32),
+                                &nested_path_in_file,
+                            )?);
+                        }
+                        output.oneof_decl.push(self.oneof(o));
+                    }
                 }
             }
 
             output.field = fields;
         }
 
-        let oneofs = input.oneofs.iter().map(|o| self.oneof(o)).collect();
-        output.oneof_decl = oneofs;
-
         output
             .options
             .set_message(self.message_options(&input.options)?);
+
+        for ext in &input.extensions {
+            let mut extension_range = protobuf::descriptor::descriptor_proto::ExtensionRange::new();
+            extension_range.set_start(ext.from);
+            // TODO: is end inclusive or exclusive?
+            extension_range.set_end(ext.to);
+            output.extension_range.push(extension_range);
+        }
 
         Ok(output)
     }
@@ -416,6 +460,8 @@ impl<'a> Resolver<'a> {
 
         if let Some(json_name) = input.options.as_slice().by_name_string("json_name")? {
             output.set_json_name(json_name);
+        } else {
+            output.set_json_name(json_name(&input.name));
         }
 
         Ok(output)
@@ -425,15 +471,15 @@ impl<'a> Resolver<'a> {
         iter::once(self.current_file).chain(self.deps).collect()
     }
 
-    fn package_files(&self, package: &str) -> Vec<&model::FileDescriptor> {
+    fn package_files(&self, package: Option<&str>) -> Vec<&model::FileDescriptor> {
         self.all_files()
             .into_iter()
-            .filter(|f| f.package == package)
+            .filter(|f| f.package.as_deref() == package)
             .collect()
     }
 
     fn current_file_package_files(&self) -> Vec<&model::FileDescriptor> {
-        self.package_files(&self.current_file.package)
+        self.package_files(self.current_file.package.as_deref())
     }
 
     fn resolve_message_or_enum(
@@ -449,7 +495,7 @@ impl<'a> Resolver<'a> {
                     relative_path_with_name.append(&ProtobufRelativePath::from(name));
                 for file in self.current_file_package_files() {
                     if let Some((n, t)) = LookupScope::File(file).resolve_message_or_enum(
-                        &ProtobufAbsolutePath::from_path_without_dot(&file.package),
+                        &ProtobufAbsolutePath::from_package_path(file.package.as_deref()),
                         &relative_path_with_name,
                     ) {
                         return (n, t);
@@ -462,7 +508,7 @@ impl<'a> Resolver<'a> {
         {
             let absolute_path = ProtobufAbsolutePath::from_path_maybe_dot(name);
             for file in self.all_files() {
-                let file_package = ProtobufAbsolutePath::from_path_without_dot(&file.package);
+                let file_package = ProtobufAbsolutePath::from_package_path(file.package.as_deref());
                 if let Some(relative) = absolute_path.remove_prefix(&file_package) {
                     if let Some((n, t)) =
                         LookupScope::File(file).resolve_message_or_enum(&file_package, &relative)
@@ -475,7 +521,8 @@ impl<'a> Resolver<'a> {
 
         panic!(
             "couldn't find message or enum {} when parsing {}",
-            name, self.current_file.package
+            name,
+            self.current_file.package.as_deref().unwrap_or("")
         );
     }
 
@@ -555,7 +602,7 @@ impl<'a> Resolver<'a> {
             }
             model::FieldType::Map(..) => {
                 let mut type_name =
-                    ProtobufAbsolutePath::from_path_without_dot(&self.current_file.package);
+                    ProtobufAbsolutePath::from_package_path(self.current_file.package.as_deref());
                 type_name.push_relative(path_in_file);
                 type_name.push_simple(Resolver::map_entry_name_for_field_name(name));
                 (
@@ -563,10 +610,16 @@ impl<'a> Resolver<'a> {
                     Some(type_name),
                 )
             }
-            model::FieldType::Group(..) => (
-                protobuf::descriptor::field_descriptor_proto::Type::TYPE_GROUP,
-                None,
-            ),
+            model::FieldType::Group { ref name, .. } => {
+                let mut type_name =
+                    ProtobufAbsolutePath::from_package_path(self.current_file.package.as_deref());
+                type_name.push_relative(path_in_file);
+                type_name.push_simple(ProtobufIdent::from(name.clone()));
+                (
+                    protobuf::descriptor::field_descriptor_proto::Type::TYPE_GROUP,
+                    Some(type_name),
+                )
+            }
         }
     }
 
@@ -621,8 +674,8 @@ impl<'a> Resolver<'a> {
 
     fn find_extension_by_path(&self, path: &str) -> ConvertResult<&model::Extension> {
         let (package, name) = match path.rfind('.') {
-            Some(dot) => (&path[..dot], &path[dot + 1..]),
-            None => (self.current_file.package.as_str(), path),
+            Some(dot) => (Some(&path[..dot]), &path[dot + 1..]),
+            None => (self.current_file.package.as_deref(), path),
         };
 
         for file in self.package_files(package) {
@@ -689,12 +742,10 @@ impl<'a> Resolver<'a> {
                 _ => Err(()),
             },
             &model::ProtobufConstant::F64(f) => match field_type {
-                &model::FieldType::Float => Ok(protobuf::UnknownValue::Fixed32(unsafe {
-                    mem::transmute::<f32, u32>(f as f32)
-                })),
-                &model::FieldType::Double => Ok(protobuf::UnknownValue::Fixed64(unsafe {
-                    mem::transmute::<f64, u64>(f)
-                })),
+                &model::FieldType::Float => {
+                    Ok(protobuf::UnknownValue::Fixed32((f as f32).to_bits()))
+                }
+                &model::FieldType::Double => Ok(protobuf::UnknownValue::Fixed64(f.to_bits())),
                 _ => Err(()),
             },
             &model::ProtobufConstant::String(ref s) => match field_type {
@@ -730,7 +781,10 @@ impl<'a> Resolver<'a> {
     fn extension(
         &self,
         input: &model::Extension,
-    ) -> ConvertResult<protobuf::descriptor::FieldDescriptorProto> {
+    ) -> ConvertResult<(
+        protobuf::descriptor::FieldDescriptorProto,
+        Vec<protobuf::descriptor::DescriptorProto>,
+    )> {
         let relative_path = ProtobufRelativePath::new("".to_owned());
         let mut field = self.field(&input.field, None, &relative_path)?;
         field.set_extendee(
@@ -738,7 +792,8 @@ impl<'a> Resolver<'a> {
                 .0
                 .path,
         );
-        Ok(field)
+        // TODO: collect groups
+        Ok((field, Vec::new()))
     }
 }
 
@@ -777,8 +832,11 @@ pub fn file_descriptor(
 
     let mut output = protobuf::descriptor::FileDescriptorProto::new();
     output.set_name(name.to_owned());
-    output.set_package(input.package.clone());
     output.set_syntax(syntax(input.syntax));
+
+    if let Some(package) = &input.package {
+        output.set_package(package.clone());
+    }
 
     let mut messages = protobuf::RepeatedField::new();
     for m in &input.messages {
@@ -798,7 +856,9 @@ pub fn file_descriptor(
 
     let mut extensions = protobuf::RepeatedField::new();
     for e in &input.extensions {
-        extensions.push(resolver.extension(e)?);
+        let (ext, group_messages) = resolver.extension(e)?;
+        extensions.push(ext);
+        output.message_type.extend(group_messages);
     }
     output.extension = extensions;
 

@@ -16,7 +16,6 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 #![allow(trivial_casts)]
-#![allow(unused_imports)]
 #![allow(unused_results)]
 
 //! Generated file from `google/protobuf/compiler/plugin.proto`
@@ -188,7 +187,7 @@ impl crate::Message for CodeGeneratorRequest {
     }
 
     fn descriptor_static() -> &'static crate::reflect::MessageDescriptor {
-        static descriptor: crate::rt::Lazy<crate::reflect::MessageDescriptor> = crate::rt::Lazy::INIT;
+        static descriptor: crate::rt::LazyV2<crate::reflect::MessageDescriptor> = crate::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
             fields.push(crate::reflect::rt::make_repeated_field_accessor::<_, crate::reflect::types::ProtobufTypeString>(
@@ -216,7 +215,7 @@ impl crate::Message for CodeGeneratorRequest {
     }
 
     fn default_instance() -> &'static CodeGeneratorRequest {
-        static instance: crate::rt::Lazy<CodeGeneratorRequest> = crate::rt::Lazy::INIT;
+        static instance: crate::rt::LazyV2<CodeGeneratorRequest> = crate::rt::LazyV2::INIT;
         instance.get(CodeGeneratorRequest::new)
     }
 }
@@ -385,7 +384,7 @@ impl crate::Message for CodeGeneratorResponse {
     }
 
     fn descriptor_static() -> &'static crate::reflect::MessageDescriptor {
-        static descriptor: crate::rt::Lazy<crate::reflect::MessageDescriptor> = crate::rt::Lazy::INIT;
+        static descriptor: crate::rt::LazyV2<crate::reflect::MessageDescriptor> = crate::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
             fields.push(crate::reflect::rt::make_option_get_ref_accessor::<_, crate::reflect::types::ProtobufTypeString, _>(
@@ -408,7 +407,7 @@ impl crate::Message for CodeGeneratorResponse {
     }
 
     fn default_instance() -> &'static CodeGeneratorResponse {
-        static instance: crate::rt::Lazy<CodeGeneratorResponse> = crate::rt::Lazy::INIT;
+        static instance: crate::rt::LazyV2<CodeGeneratorResponse> = crate::rt::LazyV2::INIT;
         instance.get(CodeGeneratorResponse::new)
     }
 }
@@ -699,7 +698,7 @@ pub mod code_generator_response {
         }
 
         fn descriptor_static() -> &'static crate::reflect::MessageDescriptor {
-            static descriptor: crate::rt::Lazy<crate::reflect::MessageDescriptor> = crate::rt::Lazy::INIT;
+            static descriptor: crate::rt::LazyV2<crate::reflect::MessageDescriptor> = crate::rt::LazyV2::INIT;
             descriptor.get(|| {
                 let mut fields = ::std::vec::Vec::new();
                 fields.push(crate::reflect::rt::make_option_get_ref_accessor::<_, crate::reflect::types::ProtobufTypeString, _>(
@@ -729,7 +728,7 @@ pub mod code_generator_response {
         }
 
         fn default_instance() -> &'static File {
-            static instance: crate::rt::Lazy<File> = crate::rt::Lazy::INIT;
+            static instance: crate::rt::LazyV2<File> = crate::rt::LazyV2::INIT;
             instance.get(File::new)
         }
     }
@@ -943,7 +942,7 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x02\x01\x03\x12\x04\x94\x01\x17\x19\
 ";
 
-static file_descriptor_proto_lazy: crate::rt::Lazy<crate::descriptor::FileDescriptorProto> = crate::rt::Lazy::INIT;
+static file_descriptor_proto_lazy: crate::rt::LazyV2<crate::descriptor::FileDescriptorProto> = crate::rt::LazyV2::INIT;
 
 fn parse_descriptor_proto() -> crate::descriptor::FileDescriptorProto {
     crate::parse_from_bytes(file_descriptor_proto_data).unwrap()

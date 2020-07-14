@@ -10,9 +10,11 @@ members = [
     "protobuf-codegen",
     "protobuf-codegen-pure",
     "protobuf-codegen-pure-test",
+    "protobuf-codegen-identical-test",
     "protobuf-examples",
     "protobuf-test",
     "protobuf-test-common",
     "perftest/vs-cxx",
     "perftest/bytes",
+    "ci-gen",
 ]

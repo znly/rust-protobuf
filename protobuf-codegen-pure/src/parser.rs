@@ -26,6 +26,9 @@ pub enum ParserError {
     MapFieldNotAllowed,
     StrLitDecodeError(StrLitDecodeError),
     LexerError(LexerError),
+    OneOfInGroup,
+    OneOfInOneOf,
+    OneOfInExtend,
 }
 
 impl From<TokenizerError> for ParserError {
@@ -203,13 +206,13 @@ impl MessageBodyParseMode {
 
 #[derive(Default)]
 pub struct MessageBody {
-    pub fields: Vec<Field>,
-    pub oneofs: Vec<OneOf>,
+    pub fields: Vec<FieldOrOneOf>,
     pub reserved_nums: Vec<FieldNumberRange>,
     pub reserved_names: Vec<String>,
     pub messages: Vec<Message>,
     pub enums: Vec<Enumeration>,
     pub options: Vec<ProtobufOption>,
+    pub extensions: Vec<FieldNumberRange>,
 }
 
 trait NumLitEx {
@@ -557,10 +560,21 @@ impl<'a> Parser<'a> {
 
             let MessageBody { fields, .. } = self.next_message_body(mode)?;
 
+            let fields = fields
+                .into_iter()
+                .map(|fo| match fo {
+                    FieldOrOneOf::Field(f) => Ok(f),
+                    FieldOrOneOf::OneOf(_) => Err(ParserError::OneOfInGroup),
+                })
+                .collect::<Result<_, ParserError>>()?;
+
             Ok(Field {
-                name,
+                // The field name is a lowercased version of the type name
+                // (which has been verified to start with an uppercase letter).
+                // https://git.io/JvxAP
+                name: name.to_ascii_lowercase(),
                 rule,
-                typ: FieldType::Group(fields),
+                typ: FieldType::Group { name, fields },
                 number,
                 options: Vec::new(),
             })
@@ -595,6 +609,13 @@ impl<'a> Parser<'a> {
         if self.tokenizer.next_ident_if_eq("oneof")? {
             let name = self.tokenizer.next_ident()?.to_owned();
             let MessageBody { fields, .. } = self.next_message_body(MessageBodyParseMode::Oneof)?;
+            let fields = fields
+                .into_iter()
+                .map(|fo| match fo {
+                    FieldOrOneOf::Field(f) => Ok(f),
+                    FieldOrOneOf::OneOf(_) => Err(ParserError::OneOfInOneOf),
+                })
+                .collect::<Result<_, ParserError>>()?;
             Ok(Some(OneOf { name, fields }))
         } else {
             Ok(None)
@@ -782,11 +803,12 @@ impl<'a> Parser<'a> {
                 }
 
                 if let Some(oneof) = self.next_oneof_opt()? {
-                    r.oneofs.push(oneof);
+                    r.fields.push(FieldOrOneOf::OneOf(oneof));
                     continue;
                 }
 
-                if let Some(_extensions) = self.next_extensions_opt()? {
+                if let Some(extensions) = self.next_extensions_opt()? {
+                    r.extensions.extend(extensions);
                     continue;
                 }
 
@@ -821,7 +843,7 @@ impl<'a> Parser<'a> {
                 self.tokenizer.next_ident_if_eq_error("option")?;
             }
 
-            r.fields.push(self.next_field(mode)?);
+            r.fields.push(FieldOrOneOf::Field(self.next_field(mode)?));
         }
 
         self.tokenizer.next_symbol_expect_eq('}')?;
@@ -841,23 +863,23 @@ impl<'a> Parser<'a> {
 
             let MessageBody {
                 fields,
-                oneofs,
                 reserved_nums,
                 reserved_names,
                 messages,
                 enums,
                 options,
+                extensions,
             } = self.next_message_body(mode)?;
 
             Ok(Some(Message {
                 name,
                 fields,
-                oneofs,
                 reserved_nums,
                 reserved_names,
                 messages,
                 enums,
                 options,
+                extensions,
             }))
         } else {
             Ok(None)
@@ -883,6 +905,15 @@ impl<'a> Parser<'a> {
             };
 
             let MessageBody { fields, .. } = self.next_message_body(mode)?;
+
+            // TODO: is oneof allowed in extend?
+            let fields: Vec<Field> = fields
+                .into_iter()
+                .map(|fo| match fo {
+                    FieldOrOneOf::Field(f) => Ok(f),
+                    FieldOrOneOf::OneOf(_) => Err(ParserError::OneOfInExtend),
+                })
+                .collect::<Result<_, ParserError>>()?;
 
             let extensions = fields
                 .into_iter()
@@ -1050,7 +1081,7 @@ impl<'a> Parser<'a> {
         self.syntax = syntax;
 
         let mut import_paths = Vec::new();
-        let mut package = String::new();
+        let mut package = None;
         let mut messages = Vec::new();
         let mut enums = Vec::new();
         let mut extensions = Vec::new();
@@ -1064,7 +1095,7 @@ impl<'a> Parser<'a> {
             }
 
             if let Some(next_package) = self.next_package_opt()? {
-                package = next_package.to_owned();
+                package = Some(next_package);
                 continue;
             }
 
@@ -1242,7 +1273,18 @@ mod test {
     }
     "#;
         let desc = parse(msg, |p| p.next_proto());
-        assert_eq!("foo.bar".to_string(), desc.package);
+        assert_eq!(Some("foo.bar".to_string()), desc.package);
+    }
+
+    #[test]
+    fn test_no_package() {
+        let msg = r#"
+    message A {
+        optional int32 a = 1;
+    }
+    "#;
+        let desc = parse(msg, |p| p.next_proto());
+        assert_eq!(None, desc.package);
     }
 
     #[test]
@@ -1269,7 +1311,7 @@ mod test {
 
         let mess = parse_opt(msg, |p| p.next_message_opt());
         assert_eq!(1, mess.fields.len());
-        match mess.fields[0].typ {
+        match mess.regular_fields_for_test()[0].typ {
             FieldType::Map(ref f) => match &**f {
                 &(FieldType::String, FieldType::Int32) => (),
                 ref f => panic!("Expecting Map<String, Int32> found {:?}", f),
@@ -1292,8 +1334,8 @@ mod test {
     }"#;
 
         let mess = parse_opt(msg, |p| p.next_message_opt());
-        assert_eq!(1, mess.oneofs.len());
-        assert_eq!(3, mess.oneofs[0].fields.len());
+        assert_eq!(1, mess.oneofs_for_test().len());
+        assert_eq!(3, mess.oneofs_for_test()[0].fields.len());
     }
 
     #[test]
@@ -1329,8 +1371,11 @@ mod test {
         }"#;
 
         let mess = parse_opt(msg, |p| p.next_message_opt());
-        assert_eq!("default", mess.fields[0].options[0].name);
-        assert_eq!("17", mess.fields[0].options[0].value.format());
+        assert_eq!("default", mess.regular_fields_for_test()[0].options[0].name);
+        assert_eq!(
+            "17",
+            mess.regular_fields_for_test()[0].options[0].value.format()
+        );
     }
 
     #[test]
@@ -1342,7 +1387,7 @@ mod test {
         let mess = parse_opt(msg, |p| p.next_message_opt());
         assert_eq!(
             r#""ab\nc d\"g\'h\0\"z""#,
-            mess.fields[0].options[0].value.format()
+            mess.regular_fields_for_test()[0].options[0].value.format()
         );
     }
 
@@ -1355,7 +1400,7 @@ mod test {
         let mess = parse_opt(msg, |p| p.next_message_opt());
         assert_eq!(
             r#""ab\nc d\xfeE\"g\'h\0\"z""#,
-            mess.fields[0].options[0].value.format()
+            mess.regular_fields_for_test()[0].options[0].value.format()
         );
     }
 
@@ -1373,14 +1418,14 @@ mod test {
         }"#;
         let mess = parse_opt(msg, |p| p.next_message_opt());
 
-        assert_eq!("Identifier", mess.fields[1].name);
-        if let FieldType::Group(ref group_fields) = mess.fields[1].typ {
-            assert_eq!(2, group_fields.len());
+        assert_eq!("identifier", mess.regular_fields_for_test()[1].name);
+        if let FieldType::Group { name, fields } = &mess.regular_fields_for_test()[1].typ {
+            assert_eq!(2, fields.len());
         } else {
             panic!("expecting group");
         }
 
-        assert_eq!("bbb", mess.fields[2].name);
+        assert_eq!("bbb", mess.regular_fields_for_test()[2].name);
     }
 
     #[test]

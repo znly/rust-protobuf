@@ -16,7 +16,6 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 #![allow(trivial_casts)]
-#![allow(unused_imports)]
 #![allow(unused_results)]
 
 //! Generated file from `google/protobuf/duration.proto`
@@ -134,7 +133,7 @@ impl crate::Message for Duration {
     }
 
     fn descriptor_static() -> &'static crate::reflect::MessageDescriptor {
-        static descriptor: crate::rt::Lazy<crate::reflect::MessageDescriptor> = crate::rt::Lazy::INIT;
+        static descriptor: crate::rt::LazyV2<crate::reflect::MessageDescriptor> = crate::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
             fields.push(crate::reflect::rt::make_simple_field_accessor::<_, crate::reflect::types::ProtobufTypeInt64>(
@@ -156,7 +155,7 @@ impl crate::Message for Duration {
     }
 
     fn default_instance() -> &'static Duration {
-        static instance: crate::rt::Lazy<Duration> = crate::rt::Lazy::INIT;
+        static instance: crate::rt::LazyV2<Duration> = crate::rt::LazyV2::INIT;
         instance.get(Duration::new)
     }
 }
@@ -279,7 +278,7 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x03f\x08\r\n\x0c\n\x05\x04\0\x02\x01\x03\x12\x03f\x10\x11b\x06proto3\
 ";
 
-static file_descriptor_proto_lazy: crate::rt::Lazy<crate::descriptor::FileDescriptorProto> = crate::rt::Lazy::INIT;
+static file_descriptor_proto_lazy: crate::rt::LazyV2<crate::descriptor::FileDescriptorProto> = crate::rt::LazyV2::INIT;
 
 fn parse_descriptor_proto() -> crate::descriptor::FileDescriptorProto {
     crate::parse_from_bytes(file_descriptor_proto_data).unwrap()

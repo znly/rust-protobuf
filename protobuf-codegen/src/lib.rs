@@ -194,8 +194,8 @@ fn gen_file(
         }
 
         w.write_serde_use(&customize);
+        static NESTED_TYPE_NUMBER: protobuf::rt::LazyV2<i32> = protobuf::rt::LazyV2::INIT;
 
-        static NESTED_TYPE_NUMBER: protobuf::rt::Lazy<i32> = protobuf::rt::Lazy::INIT;
         let message_type_number = *NESTED_TYPE_NUMBER.get(|| {
             protobuf::reflect::MessageDescriptor::for_type::<FileDescriptorProto>()
                 .get_field_by_name("message_type")
@@ -222,7 +222,7 @@ fn gen_file(
             }
         }
 
-        static ENUM_TYPE_NUMBER: protobuf::rt::Lazy<i32> = protobuf::rt::Lazy::INIT;
+        static ENUM_TYPE_NUMBER: protobuf::rt::LazyV2<i32> = protobuf::rt::LazyV2::INIT;
         let enum_type_number = *ENUM_TYPE_NUMBER.get(|| {
             protobuf::reflect::MessageDescriptor::for_type::<FileDescriptorProto>()
                 .get_field_by_name("enum_type")
@@ -342,4 +342,10 @@ pub fn protoc_gen_rust_main() {
             &customize,
         )
     });
+}
+
+/// Used in protobuf-codegen-identical-test
+#[doc(hidden)]
+pub fn proto_name_to_rs(name: &str) -> String {
+    format!("{}.rs", proto_path_to_rust_mod(name))
 }
